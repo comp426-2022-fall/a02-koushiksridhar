@@ -17,77 +17,50 @@ console.log(args);
 
 
 //h
-// default action
 if (args.h) {
-    try {console.log(`Usage: galosh.js [options] -[n|s] LATITUDE -[e|w] LONGITUDE -z TIME_ZONE
-    -h            Show this help message and exit.
-    -n, -s        Latitude: N positive; S negative.
-    -e, -w        Longitude: E positive; W negative.
-    -z            Time zone: uses tz.guess() from moment-timezone by default.
-    -d 0-6        Day to retrieve weather: 0 is today; defaults to 1.
-    -j            Echo pretty JSON from open-meteo API and exit.
-    `)
+  
+    console.log("Usage: galosh.js [options] -[n|s] LATITUDE -[e|w] LONGITUDE -z TIME_ZONE")
+    console.log("-h            Show this help message and exit.")
+    console.log("-n, -s        Latitude: N positive; S negative.")
+    console.log("-e, -w        Longitude: E positive; W negative.")
+    console.log("-z            Time zone: uses tz.guess() from moment-timezone by default.")
+    console.log("-d 0-6        Day to retrieve weather: 0 is today; defaults to 1.")
+    console.log("-j            Echo pretty JSON from open-meteo API and exit.")
     process.exit(0);
-    } 
-    catch (err) {
-        process.exit(1);
-    }
 }
 
-const lat = '35';
-if (args.n) {
-    let lat = parseFloat(args.n).toFixed(2);
-}
+//timezone
+const timezone = args.z || moment.tz.guess();
 
-if (args.s){
-    let lat = parseFloat(args.s).toFixed(2);
+//lat and long
 
-}
+var lat = args.n || (args.s * -1);
+var long = args.e || (args.w * -1);
 
-const long = '-79';
-if (args.e) {
-    let long = parseFloat(args.e).toFixed(2);
-}
+//make request
+const resp = await fetch('https://api.open-meteo.com/v1/forecast?latitude=' + latitude + '&longitude=' + longitude + '&hourly=temperature_2m,precipitation,windspeed_10m,temperature_80m&daily=precipitation_hours&temperature_unit=fahrenheit&windspeed_unit=ms&precipitation_unit=inch&timezone=' + timezoned);
 
-if (args.w) {
-    let long = parseFloat(args.e).toFixed(2);
-}
-
-const time = moment.tz.guest();
-
-const base_url = 'https://api.open-meteo.com/v1/forecast'
-const data_string = 'latitude=' + lat + '&longitude=' + long + '&daily=weathercode,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_sum,precipitation_hours,windspeed_10m_max,windgusts_10m_max,winddirection_10m_dominant&current_weather=true&temperature_unit=fahrenheit&windspeed_unit=mph&precipitation_unit=inch&timezone=' + timezone
-const url = base_url + '?' + data_string;
-
-
-const response = await fetch(url);
-
-const data = await response.json();
-
-if (args.d) {
-    const days = args.d 
-
-    //find if day is today, future, or tomorrow
-
-    if (days == 0) {
-      console.log("today.")
-    } else if (days == 1) {
-      console.log("tomorrow.")
-    } else {
-      console.log("in " + days + " days.")
-    }
-
-    //precipation data 
-    if (data.daily.precipitation_hours[days] != 0.0) {
-        console.log("You might need your galoshes");
-    } else{
-        console.log("You will not need your galoshes");
-    }
-}
-
-if (args.j) {
+const data = await resp.json();
+if (args.j){
     console.log(data);
-    exit(0);
+    process.exit(0);
 }
 
+//create a day variable to check next day precipitation level
+var day = args.d || 1;
 
+if (data.daily.precipitation_hours[day] == 0){
+    console.log("No need to war galoshes");
+} else {
+    console.log("Wear your galoshes");
+}
+
+//print precipiration for selected day
+const days = args.day
+if (days == 0){
+    console.log("today.");
+} else if (days > 1){
+    console.log("in " + days + " days.")
+} else {
+    console.log("tomorrow.")
+}
